@@ -80,6 +80,9 @@ control MyVerifyChecksum(inout headers hdr, inout metadata meta) {
 *************************************************************************/
 
 control MyIngress(inout headers hdr,
+                  /*
+                   * TODO: Read up on this "metadata"
+                   */
                   inout metadata meta,
                   inout standard_metadata_t standard_metadata) {
     action drop() {
@@ -87,7 +90,10 @@ control MyIngress(inout headers hdr,
     }
     
     action ipv4_forward(macAddr_t dstAddr, egressSpec_t port) {
-        /* TODO: fill out code in action body */
+        standard_metadata.egress_spec = port; // TODO: What
+        hdr.ethernet.srcAddr = hdr.ethernet.dstAddr;
+        hdr.ethernet.dstAddr = dstAddr;
+        hdr.ipv4.ttl = hdr.ipv4.ttl - 1;
     }
     
     table ipv4_lpm {
@@ -97,17 +103,15 @@ control MyIngress(inout headers hdr,
         actions = {
             ipv4_forward;
             drop;
-            NoAction;
         }
         size = 1024;
-        default_action = NoAction();
+        default_action = drop();
     }
     
     apply {
-        /* TODO: fix ingress control logic
-         *  - ipv4_lpm should be applied only when IPv4 header is valid
-         */
-        ipv4_lpm.apply();
+        if (hdr.ipv4.isValid()) {
+            ipv4_lpm.apply();
+        }
     }
 }
 
