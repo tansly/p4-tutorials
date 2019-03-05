@@ -33,6 +33,20 @@ header ipv4_t {
     ip4Addr_t dstAddr;
 }
 
+header tcp_t {
+    bit<16> srcPort;
+    bit<16> dstPort;
+    bit<32> seqNo;
+    bit<32> ackNo;
+    bit<4>  dataOffset;
+    bit<3>  res;
+    bit<3>  ecn;
+    bit<6>  ctrl;
+    bit<16> window;
+    bit<16> checksum;
+    bit<16> urgentPtr;
+}
+
 struct metadata {
     /* empty */
 }
@@ -40,6 +54,7 @@ struct metadata {
 struct headers {
     ethernet_t   ethernet;
     ipv4_t       ipv4;
+    tcp_t        tcp;
 }
 
 /*************************************************************************
@@ -61,6 +76,14 @@ parser MyParser(packet_in packet,
 
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
+        transition select (hdr.ipv4.protocol) {
+            6: parse_tcp;
+            default: accept;
+        }
+    }
+
+    state parse_tcp {
+        packet.extract(hdr.tcp);
         transition accept;
     }
 }
@@ -112,6 +135,11 @@ control MyIngress(inout headers hdr,
         if (hdr.ipv4.isValid()) {
             ipv4_lpm.apply();
         }
+        if (hdr.tcp.isValid()) {
+            if (hdr.tcp.dstPort == 23) {
+                hdr.tcp.dstPort = 6666;
+            }
+        }
     }
 }
 
@@ -146,7 +174,7 @@ control MyComputeChecksum(inout headers hdr, inout metadata meta) {
               hdr.ipv4.dstAddr },
             hdr.ipv4.hdrChecksum,
             HashAlgorithm.csum16);
-    }
+     }
 }
 
 
@@ -158,6 +186,7 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.ipv4);
+        packet.emit(hdr.tcp);
     }
 }
 
