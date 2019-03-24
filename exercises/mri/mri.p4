@@ -195,34 +195,27 @@ control MyEgress(inout headers hdr,
                  inout metadata meta,
                  inout standard_metadata_t standard_metadata) {
     action add_swtrace(switchID_t swid) { 
-        /*
-        * TODO: add logic to:
-        - Increment hdr.mri.count by 1
-        - Add a new swtrace header by calling push_front(1) on hdr.swtraces.
-        - Set hdr.swtraces[0].swid to the id parameter
-        - Set hdr.swtraces[0].qdepth to (qdepth_t)standard_metadata.deq_qdepth
-        - Increment hdr.ipv4.ihl by 2
-        - Increment hdr.ipv4.totalLen by 8
-        - Increment hdr.ipv4_option.optionLength by 8
-        */
+        hdr.mri.count = hdr.mri.count + 1;
+        hdr.swtraces.push_front(1);
+        hdr.swtraces[0].swid = swid;
+        hdr.swtraces[0].qdepth = (qdepth_t)standard_metadata.deq_qdepth;
+        hdr.ipv4.ihl = hdr.ipv4.ihl + 2;
+        hdr.ipv4.totalLen = hdr.ipv4.totalLen + 8;
+        hdr.ipv4_option.optionLength = hdr.ipv4_option.optionLength + 8;
     }
 
     table swtrace {
-        actions        = { 
+        actions = {
             add_swtrace;
             NoAction;
         }
-
         default_action =  NoAction();      
     }
     
     apply {
-        /*
-        * TODO: add logic to:
-        * - If hdr.mri is valid:
-        *   - Apply table swtrace
-        */
-	swtrace.apply();
+        if (hdr.mri.isValid()) {
+            swtrace.apply();
+        }
     }
 }
 
