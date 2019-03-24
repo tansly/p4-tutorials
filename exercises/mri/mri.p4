@@ -251,8 +251,9 @@ control MyDeparser(packet_out packet, in headers hdr) {
     apply {
         packet.emit(hdr.ethernet);
         packet.emit(hdr.ipv4);
-
-        /* TODO: emit ipv4_option, mri and swtraces headers */
+        packet.emit(hdr.ipv4_option);
+        packet.emit(hdr.mri);
+        packet.emit(hdr.swtraces);
     }
 }
 
