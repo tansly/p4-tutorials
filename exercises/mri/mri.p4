@@ -109,37 +109,33 @@ parser MyParser(packet_in packet,
     }
 
     state parse_ipv4_option {
-        /*
-        * TODO: Add logic to:
-        * - Extract the ipv4_option header.
-        *   - If value is equal to IPV4_OPTION_MRI, transition to parse_mri.
-        *   - Otherwise, accept.
-        */
-        transition accept;
+        packet.extract(hdr.ipv4_option);
+        transition select(hdr.ipv4_option.option) {
+            IPV4_OPTION_MRI: parse_mri;
+            default: accept;
+        }
     }
 
     state parse_mri {
-        /*
-        * TODO: Add logic to:
-        * - Extract hdr.mri.
-        * - Set meta.parser_metadata.remaining to hdr.mri.count
-        * - Select on the value of meta.parser_metadata.remaining
-        *   - If the value is equal to 0, accept.
-        *   - Otherwise, transition to parse_swtrace.
-        */
-        transition accept;
+        packet.extract(hdr.mri);
+        meta.parser_metadata.remaining = hdr.mri.count;
+        transition select(meta.parser_metadata.remaining) {
+            0: accept;
+            default: parse_swtrace;
+        }
     }
 
     state parse_swtrace {
         /*
-        * TODO: Add logic to:
-        * - Extract hdr.swtraces.next.
-        * - Decrement meta.parser_metadata.remaining by 1
-        * - Select on the value of meta.parser_metadata.remaining
-        *   - If the value is equal to 0, accept.
-        *   - Otherwise, transition to parse_swtrace.
-        */
-        transition accept;
+         * Operating on a header stack using .next.
+         * This is documented in P4 specification, 8.15. (Operations on header stacks)
+         */
+        packet.extract(hdr.swtraces.next);
+        meta.parser_metadata.remaining = meta.parser_metadata.remaining - 1;
+        transition select (meta.parser_metadata.remaining) {
+            0: accept;
+            default: parse_swtrace;
+        }
     }    
 }
 
