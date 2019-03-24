@@ -108,10 +108,8 @@ def readTableRules(p4info_helper, sw):
     for response in sw.ReadTableEntries():
         for entity in response.entities:
             entry = entity.table_entry
-            # TODO For extra credit, you can use the p4info_helper to translate
-            #      the IDs in the entry to names
-            print entry
-            print '-----'
+            print("table_name: " + p4info_helper.get_tables_name(entry.table_id))
+            print('-----')
 
 
 def printCounter(p4info_helper, sw, counter_name, index):
@@ -173,7 +171,6 @@ def main(p4info_file_path, bmv2_file_path):
         writeTunnelRules(p4info_helper, ingress_sw=s2, egress_sw=s1, tunnel_id=200,
                          dst_eth_addr="00:00:00:00:01:01", dst_ip_addr="10.0.1.1")
 
-        # TODO Uncomment the following two lines to read table entries from s1 and s2
         readTableRules(p4info_helper, s1)
         readTableRules(p4info_helper, s2)
 
